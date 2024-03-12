@@ -30,10 +30,22 @@ public class AppConfig {
         return new TopicExchange(topicExchangeName);
     }
 
-    // Binding Between Exchange and Queue
+    // Binding Between Exchange and Queue Declaration
     @Bean
     Binding binding(Queue queue, TopicExchange exchange) {
-        return BindingBuilder.bind(queue).to(exchange).with("routingkey.#");
+        return BindingBuilder.bind(queue).to(exchange)
+                .with("foo.bar.#");
+    }
+
+    // Component to Send some Messages to the Listener
+    // Because the Receiver class is a POJO, it needs to be
+    // wrapped in the MessageListenerAdapter, where you specify
+    // that it invokes receiveMessage.
+    @Bean
+    MessageListenerAdapter listenerAdapter(Receiver receiver) {
+        return new MessageListenerAdapter(
+                receiver, "receiveMessage"
+        );
     }
 
     // Configure a Message Listener Container
@@ -46,14 +58,11 @@ public class AppConfig {
                 new SimpleMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         container.setQueueNames(queueName);
+        // The Bean (receiver) defined in the listenerAdapter()
+        // Method is Registered as a Message Listener in the
+        // Container. It listens for messages on the "spring-boot" queue.
         container.setMessageListener(listenerAdapter);
 
         return container;
-    }
-
-    // Component to Send some Messages to the Listener
-    @Bean
-    MessageListenerAdapter listenerAdapter(Receiver receiver) {
-        return new MessageListenerAdapter(receiver, "receiveMessage");
     }
 }
